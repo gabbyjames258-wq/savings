@@ -1,13 +1,19 @@
-# savings
- # STX Savings Pool (Clarity + Clarinet)
+# 📨 MessageChain – On-Chain Messages
 
-A **minimal savings pool contract** where users can deposit and withdraw STX.
+MessageChain is a **simple and unique smart contract** that lets users post short text messages permanently on-chain.  
+It acts as a **public bulletin board** where every address can have its own message visible forever.  
 
-## Features
-- Deposit STX (balance tracked per user)
-- Withdraw STX (cannot exceed balance)
-- Read-only functions for balances and total deposits
+---
 
-## Usage
+## ✨ Features
+- 📨 **Post messages** tied to your wallet address  
+- 📜 **Immutable record** of thoughts and notes  
+- 🔍 **Anyone can read** your on-chain message  
 
-### Deposit
+---
+
+## 🚀 Example Usage
+
+### Post a Message
+```clarity
+(contract-call? .messagechain post "Hello Stacks World!")
