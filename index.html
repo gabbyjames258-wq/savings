@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Improved Savings Vault UI</title>
+    <script src="https://unpkg.com/@stacks/connect@latest/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@stacks/transactions@latest/dist/index.umd.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        button {
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        input {
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Savings Vault - Improved UX</h1>
+    <button id="connectWallet">Connect Wallet</button>
+    <div id="userAddress"></div>
+    <div id="totalLiquidity"></div>
+
+    <div class="grid-container">
+        <div>
+            <h2>Deposit STX</h2>
+            <input id="depositAmount" type="number" min="1" placeholder="Amount" required>
+            <button id="depositBtn">Deposit</button>
+        </div>
+        <div>
+            <h2>Withdraw STX</h2>
+            <input id="withdrawAmount" type="number" min="1" placeholder="Amount" required>
+            <button id="withdrawBtn">Withdraw</button>
+        </div>
+    </div>
+
+    <h2>Balance & Emergency</h2>
+    <button id="balanceBtn">Refresh Balance</button>
+    <div id="balance"></div>
+    <button id="emergencyBtn">Emergency Withdraw All</button>
+
+    <div id="modal">
+        <p id="modalMessage"></p>
+        <button id="closeModal">Close</button>
+    </div>
+
+    <script>
+        const appConfig = new stacks.connect.AppConfig(['store_write']);
+        const userSession = new stacks.connect.UserSession({ appConfig });
+        const contractAddress = 'ST1PQHQKV0RJXZHJ1F0V192P6WJS460X496RBDES0'; // Replace with your deployer address
+        const contractName = 'savings-vault';
+        const network = new stacks.transactions.StacksTestnet();
+
+        const showModal = (message) => {
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modal').style.display = 'block';
+        };
+
+        document.getElementById('closeModal').onclick = () => {
+            document.getElementById('modal').style.display = 'none';
+        };
+
+        document.getElementById('connectWallet').onclick = async () => {
+            stacks.connect.showBlockstackPopup({
+                userSession,
+                appDetails: { name: 'Savings Vault', icon: window.location.origin + '/icon.png' },
+                authOrigin: window.location.origin,
+                finished: ({ userSession }) => {
+                    if (userSession.isUserSignedIn()) {
+                        const address = userSession.loadUserData().profile.stxAddress.mainnet;
+                        document.getElementById('userAddress').innerText = `Connected: ${address}`;
+                        refreshBalance(address);
+                        refreshTotalLiquidity();
+                    }
+                },
+            });
+        };
+
+        const makeContractCall = async (functionName, functionArgs) => {
+            try {
+                const userData = userSession.loadUserData();
+                const options = {
+                    contractAddress,
+                    contractName,
+                    functionName,
+                    functionArgs,
+                    senderKey: userData.appPrivateKey,
+                    network,
+                    postConditions: [],
+                    anchorMode: stacks.transactions.AnchorMode.Any,
+                };
+                const transaction = await stacks.transactions.makeContractCall(options);
+                const result = await stacks.connect.broadcastTransaction(transaction, network);
+                if (result.error) {
+                    showModal(`Error: ${result.error.message}`);
+                } else {
+                    showModal('Transaction broadcasted successfully!');
+                    refreshBalance(userData.profile.stxAddress.mainnet);
+                    refreshTotalLiquidity();
+                }
+            } catch (error) {
+                showModal(`Error: ${error.message}`);
+            }
+        };
+
+        const callReadOnly = async (functionName, functionArgs, sender) => {
+            const options = {
+                contractAddress,
+                contractName,
+                functionName,
+                functionArgs,
+                network,
+                sender,
+            };
+            return stacks.transactions.callReadOnlyFunction(options);
+        };
+
+        const refreshBalance = async (address) => {
+            const result = await callReadOnly('get-balance', [stacks.transactions.principalCV(address)], address);
+            const balance = stacks.transactions.cvToJSON(result).value.value / 1000000;
+            document.getElementById('balance').innerText = `Balance: ${balance} STX`;
+        };
+
+        const refreshTotalLiquidity = async () => {
+            const result = await callReadOnly('get-total-liquidity', [], contractAddress);
+            const total = stacks.transactions.cvToJSON(result).value.value / 1000000;
+            document.getElementById('totalLiquidity').innerText = `Total Liquidity: ${total} STX`;
+        };
+
+        document.getElementById('depositBtn').onclick = async () => {
+            const amount = document.getElementById('depositAmount').value;
+            if (!amount || amount <= 0) return showModal('Invalid amount');
+            const functionArgs = [stacks.transactions.uintCV(amount * 1000000)];
+            await makeContractCall('deposit', functionArgs);
+        };
+
+        document.getElementById('withdrawBtn').onclick = async () => {
+            const amount = document.getElementById('withdrawAmount').value;
+            if (!amount || amount <= 0) return showModal('Invalid amount');
+            const functionArgs = [stacks.transactions.uintCV(amount * 1000000)];
+            await makeContractCall('withdraw', functionArgs);
+        };
+
+        document.getElementById('balanceBtn').onclick = () => {
+            const userData = userSession.loadUserData();
+            if (userData) refreshBalance(userData.profile.stxAddress.mainnet);
+        };
+
+        document.getElementById('emergencyBtn').onclick = async () => {
+            await makeContractCall('emergency-withdraw-all', []);
+        };
+    </script>
+</body>
+
+</html>
