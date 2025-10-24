@@ -1,0 +1,22 @@
+Documentary Script: "Building a Savings Vault on Stacks"
+Intro (0:00 - 0:30):
+"Welcome to this documentary on building a Savings Vault smart contract project using Clarinet and Clarity on the Stacks blockchain. In a world where DeFi is booming, liquidity vaults allow users to deposit funds securely and earn yields. Today, we'll walk through creating one from scratch, including contracts, tests, and a user-friendly UI."
+Section 1: The Smart Contract (0:30 - 2:00):
+"Narrator: Our core is the Clarity contract 'savings-vault.clar'. It features functions like 'deposit' to add STX liquidity, 'withdraw' with simulated interest, 'get-balance' for checks, and 'emergency-withdraw-all' for safety.
+[Show code scrolling]
+This set of functions enables a full liquidity protocol. We use maps for balances and variables for total liquidity, ensuring atomic operations."
+Section 2: Testing with Clarinet (2:00 - 3:30):
+"To ensure reliability, we wrote a suite of tests in TypeScript. These simulate deposits, withdrawals, errors, and liquidity updates.
+[Show test code and run demo in terminal: e.g., 'clarinet test' output]
+Narrator: Passing all tests confirms our protocol handles real-world scenarios without bugs."
+Section 3: The Initial UI (3:30 - 4:30):
+"Next, a basic web UI connects users via Hiro Wallet. It includes inputs and buttons for deposit, withdraw, and balance. Using Stacks.js, it broadcasts transactions securely.
+[Demo: Load page, connect wallet, deposit 10 STX, check balance]
+This UI directly interfaces with our Clarity functions."
+Section 4: UI Redesign for Better UX (4:30 - 6:00):
+"We didn't stop at basic – we redesigned for responsiveness, added modals for feedback, auto-refreshes, and total liquidity display.
+[Side-by-side comparison: Old vs. New UI]
+Narrator: Grid layout improves mobile use, validation prevents errors, and emergency features add trust. [Demo improved interactions]"
+Conclusion (6:00 - 6:30):
+"This project demonstrates a complete liquidity deposit protocol on Stacks. From code to UI, it's ready for expansion into full DeFi. Thanks for watching – code is available for forking and building upon!"
+This script is ~6 minutes long if narrated with visuals. For a real video, add screenshots, code highlights, and live demos.
